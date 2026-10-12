@@ -511,11 +511,174 @@ function useProjectPreview() {
   return { selected, previewOpen, openPreview, closePreview }
 }
 
+// ─── Fullscreen viewer — swipe, pinch-zoom, double-tap, pan ──────────────────
+function GalleryViewer({ gallery, idx, name, onGo, onClose }: {
+  gallery: string[]; idx: number; name: string; onGo: (d: number) => void; onClose: () => void
+}) {
+  const [scale, setScale] = useState(1)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [drag, setDrag] = useState(0)
+  const [active, setActive] = useState(false)
+  const pts = useRef(new Map<number, { x: number; y: number }>())
+  const g = useRef({ d0: 0, s0: 1, x0: 0, y0: 0, px: 0, py: 0, t: 0, moved: false, lastTap: 0 })
+  const stageRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => { setScale(1); setPos({ x: 0, y: 0 }) }, [idx])
+  useEffect(() => {
+    closeRef.current?.focus({ preventScroll: true })
+    // Escape closes only the viewer, not the whole project preview
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [])
+
+  const clampPos = (x: number, y: number, s: number) => {
+    const r = stageRef.current?.getBoundingClientRect()
+    if (!r) return { x, y }
+    const mx = (r.width * (s - 1)) / 2, my = (r.height * (s - 1)) / 2
+    return { x: Math.max(-mx, Math.min(mx, x)), y: Math.max(-my, Math.min(my, y)) }
+  }
+  const zoomAt = (s: number, cx: number, cy: number) => {
+    const r = stageRef.current!.getBoundingClientRect()
+    const ox = cx - r.left - r.width / 2, oy = cy - r.top - r.height / 2
+    setScale(s); setPos(clampPos(-ox * (s - 1), -oy * (s - 1), s))
+  }
+
+  function down(e: React.PointerEvent) {
+    if ((e.target as HTMLElement).closest('button')) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const a = [...pts.current.values()]
+    setActive(true)
+    if (a.length === 2) {
+      g.current.d0 = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); g.current.s0 = scale
+      g.current.moved = true
+    } else {
+      Object.assign(g.current, { px: e.clientX, py: e.clientY, x0: pos.x, y0: pos.y, t: Date.now(), moved: false })
+    }
+  }
+  function move(e: React.PointerEvent) {
+    if (!pts.current.has(e.pointerId)) return
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const a = [...pts.current.values()]
+    if (a.length === 2) {
+      const s = Math.max(1, Math.min(4, g.current.s0 * Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) / g.current.d0))
+      setScale(s); setPos(p => clampPos(p.x, p.y, s))
+      return
+    }
+    const dx = e.clientX - g.current.px, dy = e.clientY - g.current.py
+    if (Math.abs(dx) + Math.abs(dy) > 8) g.current.moved = true
+    if (scale > 1) setPos(clampPos(g.current.x0 + dx, g.current.y0 + dy, scale))
+    else setDrag(dx)
+  }
+  function up(e: React.PointerEvent) {
+    if (!pts.current.has(e.pointerId)) return
+    pts.current.delete(e.pointerId)
+    if (pts.current.size > 0) {
+      const [r] = [...pts.current.values()]
+      Object.assign(g.current, { px: r.x, py: r.y, x0: pos.x, y0: pos.y })
+      return
+    }
+    setActive(false)
+    if (scale < 1.05) { setScale(1); setPos({ x: 0, y: 0 }) }
+    if (scale === 1 && Math.abs(drag) > 60) onGo(drag < 0 ? 1 : -1)
+    setDrag(0)
+    if (!g.current.moved && Date.now() - g.current.t < 300) {
+      const now = Date.now()
+      if (now - g.current.lastTap < 320) {
+        if (scale > 1) { setScale(1); setPos({ x: 0, y: 0 }) } else zoomAt(2.5, e.clientX, e.clientY)
+        g.current.lastTap = 0
+      } else g.current.lastTap = now
+    }
+  }
+  function wheel(e: React.WheelEvent) {
+    const s = Math.max(1, Math.min(4, scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
+    if (s === 1) { setScale(1); setPos({ x: 0, y: 0 }) } else zoomAt(s, e.clientX, e.clientY)
+  }
+
+  const zoomed = scale > 1
+  return (
+    <div role="dialog" aria-modal="true" aria-label={`Galería ${name}`}
+      className="ih-viewer fixed inset-0 z-[400] bg-black text-white flex flex-col select-none"
+      style={{ height: '100dvh' }}>
+      <div className="flex items-center justify-between px-5 md:px-10 shrink-0"
+        style={{ paddingTop: 'max(14px, env(safe-area-inset-top))', paddingBottom: 14 }}>
+        <span className="font-bold tabular-nums text-[13px] tracking-[0.15em]">
+          <span className="text-[#FE5100]">{String(idx + 1).padStart(2, '0')}</span>
+          <span className="text-white/40 mx-1.5">/</span>
+          <span className="text-white/40">{String(gallery.length).padStart(2, '0')}</span>
+        </span>
+        <span className="hidden sm:block text-[11px] tracking-[0.25em] uppercase text-white/50 truncate px-4">{name}</span>
+        <button ref={closeRef} onClick={onClose} aria-label="Cerrar galería"
+          className="w-11 h-11 -mr-2 flex items-center justify-center text-white hover:text-[#FE5100] transition-colors">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" /></svg>
+        </button>
+      </div>
+
+      <div ref={stageRef} className="relative flex-1 min-h-0 overflow-hidden"
+        style={{ touchAction: 'none', cursor: zoomed ? 'grab' : 'zoom-in' }}
+        onPointerDown={down} onPointerMove={move} onPointerUp={up}
+        onPointerCancel={up} onWheel={wheel}>
+        <div className="flex h-full"
+          style={{
+            transform: `translateX(calc(${-idx * 100}% + ${drag}px))`,
+            transition: active ? 'none' : 'transform 0.45s cubic-bezier(0.22,1,0.36,1)',
+          }}>
+          {gallery.map((src, i) => (
+            <div key={src} className="w-full h-full shrink-0 flex items-center justify-center" aria-hidden={i !== idx}>
+              <img src={src} alt={`${name} — ${i + 1}`} draggable={false}
+                className="max-w-full max-h-full w-full h-full object-contain pointer-events-none"
+                loading={Math.abs(i - idx) <= 1 ? 'eager' : 'lazy'}
+                style={i === idx ? {
+                  transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+                  transition: active ? 'none' : 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
+                } : undefined} />
+            </div>
+          ))}
+        </div>
+
+        {gallery.length > 1 && !zoomed && (
+          <>
+            <button onClick={() => onGo(-1)} aria-label="Imagen anterior"
+              className="hidden md:flex absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-white/30 items-center justify-center text-white hover:border-[#FE5100] hover:text-[#FE5100] transition-colors">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <button onClick={() => onGo(1)} aria-label="Imagen siguiente"
+              className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-white/30 items-center justify-center text-white hover:border-[#FE5100] hover:text-[#FE5100] transition-colors">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="shrink-0 px-5 md:px-10 pt-3"
+        style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
+        <p className="text-center text-[10px] tracking-[0.25em] uppercase text-white/40 mb-3">
+          {zoomed ? 'Doble toque para restablecer' : 'Desliza · Pellizca o doble toque para ampliar'}
+        </p>
+        {gallery.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto justify-start sm:justify-center pb-1" style={{ scrollbarWidth: 'none' }}>
+            {gallery.map((src, i) => (
+              <button key={src} onClick={() => onGo(i - idx)} aria-label={`Ver imagen ${i + 1}`} aria-current={i === idx}
+                className="shrink-0 w-14 h-10 overflow-hidden transition-opacity"
+                style={{ opacity: i === idx ? 1 : 0.4, outline: i === idx ? '1px solid #FE5100' : 'none', outlineOffset: 2 }}>
+                <img src={src} alt="" draggable={false} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ProjectPreview({ selected, previewOpen, onClose }: {
   selected: Project | null; previewOpen: boolean; onClose: () => void
 }) {
   const [idx, setIdx] = useState(0)
   const [dir, setDir] = useState(1)
+  const [viewerOpen, setViewerOpen] = useState(false)
   const dragX = useRef<number | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -533,7 +696,7 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
       previous?.focus({ preventScroll: true })
     }
   }, [selected?.id])
-  useEffect(() => { setIdx(0); setDir(1) }, [selected?.id])
+  useEffect(() => { setIdx(0); setDir(1); setViewerOpen(false) }, [selected?.id])
   if (!selected) return null
 
   const gallery = galleryFor(selected)
@@ -549,6 +712,7 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
     const dx = e.clientX - dragX.current
     dragX.current = null
     if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1)
+    else if (Math.abs(dx) < 8) setViewerOpen(true)
   }
 
   // Rendered through a portal to <body> so the fixed overlay is always
@@ -589,10 +753,15 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
         }}>
         {/* Image panel — carousel, clip reveal, full image (no crop) */}
         <div className="ih-preview-image group relative overflow-hidden bg-[#F4F4F4] h-[44svh] md:h-full select-none"
-          style={{ touchAction: 'pan-y', cursor: gallery.length > 1 ? 'grab' : undefined }}
-          onPointerDown={gallery.length > 1 ? onDragStart : undefined}
+          style={{ touchAction: 'pan-y', cursor: 'zoom-in' }}
+          onPointerDown={onDragStart}
           onPointerCancel={() => { dragX.current = null }}
-          onPointerUp={gallery.length > 1 ? onDragEnd : undefined}>
+          onPointerUp={onDragEnd}>
+          <button onClick={() => setViewerOpen(true)} aria-label="Ver galería en pantalla completa"
+            className="ih-preview-expand absolute top-4 right-4 md:top-6 md:right-6 z-10 w-11 h-11 bg-white/80 backdrop-blur-sm flex items-center justify-center text-black hover:text-[#FE5100] transition-colors"
+            style={{ opacity: previewOpen ? 1 : 0, transition: 'opacity 0.5s ease', transitionDelay: previewOpen ? '0.4s' : '0s' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
+          </button>
           <div className="ih-preview-photo absolute inset-0"
             style={{
               clipPath: previewOpen ? 'inset(0 0 0 0)' : 'inset(0 0 100% 0)',
@@ -684,6 +853,9 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
           </div>
         </div>
       </div>
+      {viewerOpen && (
+        <GalleryViewer gallery={gallery} idx={idx} name={selected.name} onGo={go} onClose={() => setViewerOpen(false)} />
+      )}
     </div>,
     document.body
   )
@@ -1553,3 +1725,4 @@ export default function App() {
     </div>
   )
 }
+
