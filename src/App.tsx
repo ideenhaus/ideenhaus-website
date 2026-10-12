@@ -575,7 +575,7 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
 
       {/* Close — anchored inside the content area, clear of the nav, always visible */}
       <button ref={closeRef} onClick={onClose}
-        className="absolute top-5 md:top-28 right-8 md:right-16 z-[20] flex items-center gap-2 text-[#898989] hover:text-black text-[12px] tracking-[0.25em] uppercase transition-all duration-300"
+        className="ih-preview-close absolute top-5 md:top-28 right-8 md:right-16 z-[20] flex items-center gap-2 text-[#898989] hover:text-black text-[12px] tracking-[0.25em] uppercase transition-all duration-300"
         style={{ opacity: previewOpen ? 1 : 0, transitionDelay: previewOpen ? '0.2s' : '0s' }}>
         Cerrar <span aria-hidden className="text-[18px] leading-none">×</span>
       </button>
@@ -593,7 +593,7 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
           onPointerDown={gallery.length > 1 ? onDragStart : undefined}
           onPointerCancel={() => { dragX.current = null }}
           onPointerUp={gallery.length > 1 ? onDragEnd : undefined}>
-          <div className="absolute inset-0"
+          <div className="ih-preview-photo absolute inset-0"
             style={{
               clipPath: previewOpen ? 'inset(0 0 0 0)' : 'inset(0 0 100% 0)',
               transition: 'clip-path 0.7s cubic-bezier(0.65,0,0.35,1)',
@@ -614,21 +614,21 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
             <>
               {/* Circular ring arrows — orange, always visible, reinforce on hover */}
               <button onClick={() => go(-1)} aria-label="Anterior"
-                className="group/arrow absolute left-5 md:left-8 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full border border-[#FE5100]/60 bg-white/70 backdrop-blur-sm flex items-center justify-center text-[#FE5100] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#FE5100] hover:bg-white hover:scale-110"
+                className="ih-preview-arrow group/arrow absolute left-5 md:left-8 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full border border-[#FE5100]/60 bg-white/70 backdrop-blur-sm flex items-center justify-center text-[#FE5100] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#FE5100] hover:bg-white hover:scale-110"
                 style={{ opacity: previewOpen ? 0.85 : 0, transitionDelay: previewOpen ? '0.32s' : '0s' }}>
                 <span className="inline-flex transition-transform duration-300 group-hover/arrow:-translate-x-1">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><polyline points="15 18 9 12 15 6" /></svg>
                 </span>
               </button>
               <button onClick={() => go(1)} aria-label="Siguiente"
-                className="group/arrow absolute right-5 md:right-8 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full border border-[#FE5100]/60 bg-white/70 backdrop-blur-sm flex items-center justify-center text-[#FE5100] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#FE5100] hover:bg-white hover:scale-110"
+                className="ih-preview-arrow group/arrow absolute right-5 md:right-8 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full border border-[#FE5100]/60 bg-white/70 backdrop-blur-sm flex items-center justify-center text-[#FE5100] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#FE5100] hover:bg-white hover:scale-110"
                 style={{ opacity: previewOpen ? 0.85 : 0, transitionDelay: previewOpen ? '0.32s' : '0s' }}>
                 <span className="inline-flex transition-transform duration-300 group-hover/arrow:translate-x-1">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><polyline points="9 18 15 12 9 6" /></svg>
                 </span>
               </button>
               {/* Position indicator + subtle progress line */}
-              <div className="absolute bottom-5 left-6 md:left-10 z-10 flex items-center gap-4"
+              <div className="ih-preview-counter absolute bottom-5 left-6 md:left-10 z-10 flex items-center gap-4"
                 style={{ opacity: previewOpen ? 1 : 0, transition: 'opacity 0.5s ease', transitionDelay: previewOpen ? '0.4s' : '0s' }}>
                 <span className="font-bold tabular-nums text-[13px] tracking-[0.15em]">
                   <span className="text-[#FE5100]">{String(idx + 1).padStart(2, '0')}</span>
