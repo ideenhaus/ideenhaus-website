@@ -757,11 +757,6 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
           onPointerDown={onDragStart}
           onPointerCancel={() => { dragX.current = null }}
           onPointerUp={onDragEnd}>
-          <button onClick={() => setViewerOpen(true)} aria-label="Ver galería en pantalla completa"
-            className="ih-preview-expand absolute top-4 right-4 md:top-6 md:right-6 z-10 w-11 h-11 bg-white/80 backdrop-blur-sm flex items-center justify-center text-black hover:text-[#FE5100] transition-colors"
-            style={{ opacity: previewOpen ? 1 : 0, transition: 'opacity 0.5s ease', transitionDelay: previewOpen ? '0.4s' : '0s' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
-          </button>
           <div className="ih-preview-photo absolute inset-0"
             style={{
               clipPath: previewOpen ? 'inset(0 0 0 0)' : 'inset(0 0 100% 0)',
@@ -1725,4 +1720,3 @@ export default function App() {
     </div>
   )
 }
-
