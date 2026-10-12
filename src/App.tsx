@@ -560,7 +560,7 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
         if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1) }
         if (e.key === 'ArrowRight') { e.preventDefault(); go(1) }
         if (e.key === 'Tab') {
-          const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button, a[href]')
+          const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button, a[href], [tabindex="0"]')
           if (!controls?.length) return
           const first = controls[0], last = controls[controls.length - 1]
           if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
@@ -588,7 +588,7 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
           transition: 'opacity 0.56s cubic-bezier(0.22,1,0.36,1), transform 0.56s cubic-bezier(0.22,1,0.36,1)',
         }}>
         {/* Image panel — carousel, clip reveal, full image (no crop) */}
-        <div className="group relative overflow-hidden bg-[#F4F4F4] h-[44svh] md:h-full select-none"
+        <div className="ih-preview-image group relative overflow-hidden bg-[#F4F4F4] h-[44svh] md:h-full select-none"
           style={{ touchAction: 'pan-y', cursor: gallery.length > 1 ? 'grab' : undefined }}
           onPointerDown={gallery.length > 1 ? onDragStart : undefined}
           onPointerCancel={() => { dragX.current = null }}
@@ -646,8 +646,8 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
         </div>
 
         {/* Text panel — fits within one screen, no scroll */}
-        <div className="relative flex flex-col justify-center pl-8 md:pl-16 pr-8 md:pr-16 pt-10 md:pt-28 pb-10 md:pb-16">
-          <div className="max-w-xl">
+        <div className="ih-preview-text relative flex flex-col justify-center pl-8 md:pl-16 pr-8 md:pr-16 pt-10 md:pt-28 pb-10 md:pb-16">
+          <div className="ih-preview-copy max-w-xl">
             <div className="flex items-center gap-4 mb-5 md:mb-8"
               style={{ opacity: previewOpen ? 1 : 0, transform: previewOpen ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.22,1,0.36,1)', transitionDelay: '0.22s' }}>
               <span className="w-12 h-px bg-[#FE5100]" />
@@ -659,12 +659,12 @@ function ProjectPreview({ selected, previewOpen, onClose }: {
               {selected.name.split(' ')[0]}<br /><span className="text-[#FE5100]">{selected.name.split(' ').slice(1).join(' ') || '.'}</span>
             </h2>
 
-            <p className="text-[16px] md:text-[19px] leading-relaxed text-black max-w-md"
+            <p tabIndex={0} aria-label="Descripción del proyecto" className="ih-preview-description text-[16px] md:text-[19px] leading-relaxed text-black max-w-md"
               style={{ opacity: previewOpen ? 1 : 0, transform: previewOpen ? 'none' : 'translateY(22px)', transition: 'all 0.7s cubic-bezier(0.22,1,0.36,1)', transitionDelay: '0.42s' }}>
               {selected.concept}
             </p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mt-8 md:mt-12 border-t border-[#E4E4E4] pt-6 md:pt-8"
+            <div className="ih-preview-meta grid grid-cols-3 gap-6 mt-8 md:mt-12 border-t border-[#E4E4E4] pt-6 md:pt-8"
               style={{ opacity: previewOpen ? 1 : 0, transform: previewOpen ? 'none' : 'translateY(18px)', transition: 'all 0.7s cubic-bezier(0.22,1,0.36,1)', transitionDelay: '0.54s' }}>
               <div>
                 <span className={`${LABEL_TEXT} block mb-2`}>Ubicación</span>
