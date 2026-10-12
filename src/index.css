@@ -370,6 +370,7 @@ footer a, footer button { overflow-wrap: anywhere; }
   .ih-preview-close { top: 0; right: 1.5rem; height: 44px; }
   .ih-preview-photo { top: 44px; bottom: 56px; }
   .ih-preview-photo img { padding: 0 1rem; }
+  .ih-preview-expand { top: 0 !important; left: 0.5rem !important; right: auto !important; background: transparent !important; }
   .ih-preview-arrow {
     top: auto;
     bottom: 6px;
@@ -455,4 +456,3 @@ footer a, footer button { overflow-wrap: anywhere; }
     scroll-behavior: auto !important;
   }
 }
-
