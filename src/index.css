@@ -56,6 +56,11 @@ html {
               border-color 0.28s ease,
               opacity 0.25s ease;
 }
+@media (pointer: coarse) {
+  .ih-cursor-ring {
+    display: none !important;
+  }
+}
 /* Negative / invert state over interactive elements */
 .ih-cursor-ring.is-active {
   width: 62px;
