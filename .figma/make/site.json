@@ -1,7 +1,10 @@
+
 {
-  "description": "Showcase your architectural and interior design projects with a sophisticated, minimalist website that emphasizes creativity and user experience.",
+  "title": "Arquitectura y Diseño de Interiores en Pereira | IdeenHaus",
+  "description": "IdeenHaus: arquitectura y diseño de interiores en Pereira. Diseñamos espacios residenciales, interiores y fachadas con propuestas creativas, funcionales y contemporáneas.",
+  "language": "es",
   "robots": {
-    "index": false
+    "index": true
   },
   "accessibility": {
     "addBypassLinks": false,
